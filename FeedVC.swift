@@ -10,17 +10,23 @@ import UIKit
 import SwiftKeychainWrapper
 import Firebase
 
-class FeedVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class FeedVC: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var imageAdd: CircleView!
     
     var posts = [Post]()
-
+    var imagePicker: UIImagePickerController!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         tableView.delegate = self
         tableView.dataSource = self
+        
+        imagePicker = UIImagePickerController()
+        imagePicker.allowsEditing = true
+        imagePicker.delegate = self
         
         DataService.ds.REF_POSTS.observe(.value, with: { (snapshot) in
 //            print(snapshot.value ?? "observer returned without a value for the posts")
@@ -48,7 +54,6 @@ class FeedVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let post = posts[indexPath.row]
-        
         if let cell = tableView.dequeueReusableCell(withIdentifier: "PostCell") as? PostCell {
             cell.configureCell(post: post)
             return cell
@@ -57,7 +62,19 @@ class FeedVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
         }
     }
     
-
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        if let image = info[UIImagePickerControllerEditedImage] as? UIImage {
+            imageAdd.image = image
+        } else {
+            print("JESS: A valid image wasn't selected")
+        }
+        imagePicker.dismiss(animated: true, completion: nil)
+    }
+    
+    @IBAction func addImageTapped(_ sender: Any) {
+        present(imagePicker, animated: true, completion: nil)
+    }
+    
     @IBAction func signOutTapped(_ sender: Any) {
         print("About to sign out")
         let keychainResult = KeychainWrapper.standard.removeObject(forKey: KEY_UID)
