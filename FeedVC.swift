@@ -32,6 +32,7 @@ class FeedVC: UIViewController, UITableViewDelegate, UITableViewDataSource, UIIm
         imagePicker.delegate = self
         
         DataService.ds.REF_POSTS.observe(.value, with: { (snapshot) in
+            self.posts = []  // This line was not in the original video but prevents duplicates.
 //            print(snapshot.value ?? "observer returned without a value for the posts")
             if let snapshot = snapshot.children.allObjects as? [FIRDataSnapshot] {
                 for snap in snapshot {
@@ -105,9 +106,33 @@ class FeedVC: UIViewController, UITableViewDelegate, UITableViewDataSource, UIIm
                 } else {
                     print("JESS: Successfully uploaded image to Firebase storage.")
                     let downloadUrl = metaData?.downloadURL()?.absoluteString
+                    if downloadUrl != nil {
+                        self.postToFirebase(imgUrl: downloadUrl!)
+                    } else {
+                        print("Firebase Storage did not return a URL for the image.")
+                    }
                 }
             }
         }
+    }
+    
+    func postToFirebase(imgUrl: String) {
+        let post: Dictionary<String, Any> = [
+            "caption": captionField.text!,
+            "imageURL": imgUrl,
+            "likes": 0
+            ]
+        
+        let firebasePost = DataService.ds.REF_POSTS.childByAutoId()
+        firebasePost.setValue(post)
+        
+        // Clear out the fields for the posted item
+        captionField.text = ""
+        imageSelected = false
+        imageAdd.image = UIImage(named: "add-image")
+        
+        // Reload the tableview with the updated post
+        tableView.reloadData()
     }
     
     @IBAction func signOutTapped(_ sender: Any) {
